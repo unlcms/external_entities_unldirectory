@@ -53,23 +53,33 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
     if (isset($parameters['title'])) {
       // New search.
       $q = $parameters['title'];
+      $parameters = ['q'=>$q, 'format'=>'json'];
     }
     elseif ($parameters['id']) {
       // Existing populated field.
-      $q = explode('-', $parameters['id'])[1];
+      $uid = explode('-', $parameters['id'])[1];
+      $parameters = ['uid'=>$uid, 'format'=>'json'];
     }
     else {
-      throw new QueryException("Pulling UNL Directory data failed.");
+      throw new QueryException("Autocomplete UNL Directory reference failed.");
     }
 
     $response = $this->httpClient->get(
       $this->configuration['endpoint'],
       [
-        'query' => ['q'=>$q, 'format'=>'json'],
+        'query' => $parameters,
         'headers' => $this->getHttpHeaders()
       ]
     );
     $results = $this->decoder->getDecoder($this->configuration['format'])->decode($response->getBody());
+
+    // Pretend that the specific uid record is actually a search result.
+    if (isset($uid)) {
+      $results_temp = $results;
+      unset($results);
+      $results[0] = $results_temp;
+    }
+
     foreach ($results as &$result) {
       // Cleanup the result so that 'uid' is available at $result['uid'].
       foreach (explode(',', $result['dn']) as $piece) {
@@ -79,7 +89,7 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       $result = ((object) $result);
     }
     // Only return a few items in order to limit the requests in load().
-    return array_slice($results, 0, 5);
+    return array_slice($results, 0, 6);
   }
 
 }
