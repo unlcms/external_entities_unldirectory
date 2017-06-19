@@ -1,6 +1,6 @@
 name: External Entities (UNL Directory)
 type: module
-description: Reference UNL Directory data as external entities
+description: Reference UNL Directory data as external entities.
 core: 8.x
 package: External Entities
 dependencies:
