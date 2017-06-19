@@ -50,10 +50,22 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
    * {@inheritdoc}
    */
   public function query(array $parameters) {
+    if (isset($parameters['title'])) {
+      // New search.
+      $q = $parameters['title'];
+    }
+    elseif ($parameters['id']) {
+      // Existing populated field.
+      $q = explode('-', $parameters['id'])[1];
+    }
+    else {
+      throw new QueryException("Pulling UNL Directory data failed.");
+    }
+
     $response = $this->httpClient->get(
       $this->configuration['endpoint'],
       [
-        'query' => ['q'=>$parameters['title'], 'format'=>'json'],
+        'query' => ['q'=>$q, 'format'=>'json'],
         'headers' => $this->getHttpHeaders()
       ]
     );
@@ -66,7 +78,8 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       }
       $result = ((object) $result);
     }
-    return $results;
+    // Only return a few items in order to limit the requests in load().
+    return array_slice($results, 0, 5);
   }
 
 }
