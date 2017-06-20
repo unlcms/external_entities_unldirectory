@@ -55,13 +55,13 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       $q = $parameters['title'];
       $parameters = ['q'=>$q, 'format'=>'json'];
     }
-    elseif ($parameters['id']) {
+    elseif (isset($parameters['id'])) {
       // Existing populated field.
       $uid = explode('-', $parameters['id'])[1];
       $parameters = ['uid'=>$uid, 'format'=>'json'];
     }
     else {
-      throw new QueryException("Autocomplete UNL Directory reference failed.");
+      return [];
     }
 
     $response = $this->httpClient->get(
