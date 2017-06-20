@@ -29,6 +29,7 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
    * {@inheritdoc}
    */
   public function load($id) {
+    $id = str_replace('_', '-', $id);
     $response = $this->httpClient->get(
       $this->configuration['endpoint'],
       [
@@ -37,6 +38,7 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       ]
     );
     $result = (object) $this->decoder->getDecoder($this->configuration['format'])->decode($response->getBody());
+    $result->uid = str_replace('-', '_', $result->uid);
     return $result;
   }
 
@@ -58,6 +60,7 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
     elseif (isset($parameters['id'])) {
       // Existing populated field.
       $uid = explode('-', $parameters['id'])[1];
+      $uid = str_replace('_', '-', $uid);
       $parameters = ['uid'=>$uid, 'format'=>'json'];
     }
     else {
@@ -84,6 +87,10 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       // Cleanup the result so that 'uid' is available at $result['uid'].
       foreach (explode(',', $result['dn']) as $piece) {
         $pieces = explode('=', $piece);
+        // Need to substitute hyphen in old student IDs like s-jdoe2.
+        if ($pieces[0] == 'uid') {
+          $pieces[1] = str_replace('-', '_', $pieces[1]);
+        }
         $result[$pieces[0]] = $pieces[1];
       }
       $result = ((object) $result);
