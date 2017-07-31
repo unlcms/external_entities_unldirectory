@@ -41,9 +41,11 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
     $result->uid = str_replace('-', '_', $result->uid);
 
     // Move the parts of the knowledge array up to the top level.
-    foreach($result->knowledge as $key => $value) {
-      $result->$key = $value;
-      unset($result->knowledge[$key]);
+    if (isset($result->knowledge)) {
+      foreach ($result->knowledge as $key => $value) {
+        $result->$key = $value;
+        unset($result->knowledge[$key]);
+      }
     }
 
     return $result;
