@@ -97,7 +97,8 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
       foreach (explode(',', $result['dn']) as $piece) {
         $pieces = explode('=', $piece);
         // Need to substitute hyphen in old student IDs like s-jdoe2.
-        if ($pieces[0] == 'uid') {
+        if ($pieces[0] == 'uid' || $pieces[0] == 'CN') {
+          $pieces[0] = 'uid';
           $pieces[1] = str_replace('-', '_', $pieces[1]);
         }
         $result[$pieces[0]] = $pieces[1];
