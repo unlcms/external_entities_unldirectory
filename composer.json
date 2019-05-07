@@ -3,7 +3,7 @@
   "description": "Reference UNL Directory data as external entities.",
   "type": "drupal-module",
   "require": {
-    "drupal/external_entities": "1.0.*"
+    "drupal/external_entities": "2.0.*"
   },
   "authors": [
     {
