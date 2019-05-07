@@ -24,7 +24,7 @@ function external_entities_unldirectory_form_external_entity_type_form_alter(arr
  *   The current state of the form.
  */
 function external_entities_unldirectory_type_validate(array $form, FormStateInterface $form_state) {
-  if ($form_state->getValue('client') == 'unldirectory_client') {
+  if ($form_state->getValue('client') == 'unldirectory') {
     external_entities_unldirectory_type_validate_format($form, $form_state);
   }
 }

@@ -5,19 +5,20 @@
  * Contains \Drupal\external_entities_unldirectory\Plugin\ExternalEntityStorageClient\UnlDirectoryClient.
  */
 
-namespace Drupal\external_entities_unldirectory\Plugin\ExternalEntityStorageClient;
+namespace Drupal\external_entities_unldirectory\Plugin\ExternalEntities\StorageClient;
 
-use Drupal\external_entities\ExternalEntityStorageClientBase;
+use Drupal\external_entities\Plugin\ExternalEntities\StorageClient\Rest;
 
 /**
  * UNL Directory implementation of an external entity storage client.
  *
  * @ExternalEntityStorageClient(
- *   id = "unldirectory_client",
- *   name = "UNL Directory"
+ *   id = "unldirectory",
+ *   label = @Translation("UNL Directory"),
+ *   description = @Translation("Retrieves external entities from directory.unl.edu.")
  * )
  */
-class UnlDirectoryClient extends ExternalEntityStorageClientBase {
+class UnlDirectory extends Rest {
 
   /**
    * {@inheritdoc}
@@ -33,18 +34,24 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
     $response = $this->httpClient->get(
       $this->configuration['endpoint'],
       [
-        'query' => ['uid'=>$id, 'format'=>'json'],
+        'query' => ['uid' => $id, 'format' => 'json'],
         'headers' => $this->getHttpHeaders()
       ]
     );
-    $result = (object) $this->decoder->getDecoder($this->configuration['format'])->decode($response->getBody());
-    $result->uid = str_replace('-', '_', $result->uid);
+
+    $result = $this
+      ->getResponseDecoderFactory()
+      ->getDecoder($this->configuration['response_format'])
+      ->decode($response->getBody());
+
+
+    $result['uid'] = str_replace('-', '_', $result['uid']);
 
     // Move the parts of the knowledge array up to the top level.
-    if (isset($result->knowledge)) {
-      foreach ($result->knowledge as $key => $value) {
-        $result->$key = $value;
-        unset($result->knowledge[$key]);
+    if (isset($result['knowledge'])) {
+      foreach ($result['knowledge'] as $key => $value) {
+        $result['$key'] = $value;
+        unset($result['knowledge'][$key]);
       }
     }
 
@@ -60,17 +67,20 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
   /**
    * {@inheritdoc}
    */
-  public function query(array $parameters) {
-    if (isset($parameters['title'])) {
+  public function query(array $parameters = [], array $sorts = [], $start = NULL, $length = NULL) {
+    if (isset($parameters[0]) && $parameters[0]['field'] == 'title') {
       // New search.
-      $q = $parameters['title'];
-      $parameters = ['q'=>$q, 'format'=>'json'];
+      $q = $parameters[0]['value'];
+      $parameters = ['q' => $q, 'format' => 'json'];
     }
-    elseif (isset($parameters['id'])) {
+    elseif (isset($parameters[0]) && $parameters[0]['field'] == 'id') {
       // Existing populated field.
-      $uid = explode('-', $parameters['id'])[1];
-      $uid = str_replace('_', '-', $uid);
-      $parameters = ['uid'=>$uid, 'format'=>'json'];
+      $uid = $parameters[0]['value'][0];
+      if (strpos($uid, '-') !== false) {
+        $uid = explode('-', $parameters[0]['value'][0])[1];
+        $uid = str_replace('_', '-', $uid);
+      }
+      $parameters = ['uid' => $uid, 'format' => 'json'];
     }
     else {
       return [];
@@ -79,11 +89,15 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
     $response = $this->httpClient->get(
       $this->configuration['endpoint'],
       [
-        'query' => $parameters,
-        'headers' => $this->getHttpHeaders()
+        'headers' => $this->getHttpHeaders(),
+        'query' => $parameters + $this->configuration['parameters']['list'],
       ]
     );
-    $results = $this->decoder->getDecoder($this->configuration['format'])->decode($response->getBody());
+
+    $results = $this
+      ->getResponseDecoderFactory()
+      ->getDecoder($this->configuration['response_format'])
+      ->decode($response->getBody());
 
     // Pretend that the specific uid record is actually a search result.
     if (isset($uid)) {
@@ -101,12 +115,12 @@ class UnlDirectoryClient extends ExternalEntityStorageClientBase {
           $pieces[0] = 'uid';
           $pieces[1] = str_replace('-', '_', $pieces[1]);
         }
-        $result[$pieces[0]] = $pieces[1];
+        $result[$pieces[1]] = [$pieces[0] => $pieces[1]];
       }
-      $result = ((object) $result);
     }
+
     // Only return a few items in order to limit the requests in load().
-    return array_slice($results, 0, 6);
+    return array_slice($results, 0, 8);
   }
 
 }
