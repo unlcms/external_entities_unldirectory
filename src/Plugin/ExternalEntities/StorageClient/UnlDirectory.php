@@ -44,16 +44,7 @@ class UnlDirectory extends Rest {
       ->getDecoder($this->configuration['response_format'])
       ->decode($response->getBody());
 
-
     $result['uid'] = str_replace('-', '_', $result['uid']);
-
-    // Move the parts of the knowledge array up to the top level.
-    if (isset($result['knowledge'])) {
-      foreach ($result['knowledge'] as $key => $value) {
-        $result['$key'] = $value;
-        unset($result['knowledge'][$key]);
-      }
-    }
 
     return $result;
   }
