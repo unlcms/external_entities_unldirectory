@@ -97,21 +97,26 @@ class UnlDirectory extends Rest {
       $results[0] = $results_temp;
     }
 
-    foreach ($results as &$result) {
-      // Cleanup the result so that 'uid' is available at $result['uid'].
-      foreach (explode(',', $result['dn']) as $piece) {
-        $pieces = explode('=', $piece);
-        // Need to substitute hyphen in old student IDs like s-jdoe2.
-        if ($pieces[0] == 'uid' || $pieces[0] == 'CN') {
-          $pieces[0] = 'uid';
-          $pieces[1] = str_replace('-', '_', $pieces[1]);
+    if ($results) {
+      foreach ($results as &$result) {
+        // Cleanup the result so that 'uid' is available at $result['uid'].
+        foreach (explode(',', $result['dn']) as $piece) {
+          $pieces = explode('=', $piece);
+          // Need to substitute hyphen in old student IDs like s-jdoe2.
+          if ($pieces[0] == 'uid' || $pieces[0] == 'CN') {
+            $pieces[0] = 'uid';
+            $pieces[1] = str_replace('-', '_', $pieces[1]);
+          }
+          $result[$pieces[1]] = [$pieces[0] => $pieces[1]];
         }
-        $result[$pieces[1]] = [$pieces[0] => $pieces[1]];
       }
-    }
 
-    // Only return a few items in order to limit the requests in load().
-    return array_slice($results, 0, 8);
+      // Only return a few items in order to limit the requests in load().
+      return array_slice($results, 0, 8);
+    }
+    else {
+      return [];
+    }
   }
 
 }
