@@ -8,6 +8,7 @@
 namespace Drupal\external_entities_unldirectory\Plugin\ExternalEntities\StorageClient;
 
 use Drupal\external_entities\Plugin\ExternalEntities\StorageClient\Rest;
+use GuzzleHttp\Exception\ClientException;
 
 /**
  * UNL Directory implementation of an external entity storage client.
@@ -31,13 +32,19 @@ class UnlDirectory extends Rest {
    */
   public function load($id) {
     $id = str_replace('_', '-', $id);
-    $response = $this->httpClient->get(
-      $this->configuration['endpoint'],
-      [
-        'query' => ['uid' => $id, 'format' => 'json'],
-        'headers' => $this->getHttpHeaders()
-      ]
-    );
+
+    try {
+      $response = $this->httpClient->get(
+        $this->configuration['endpoint'],
+        [
+          'query' => ['uid' => $id, 'format' => 'json'],
+          'headers' => $this->getHttpHeaders()
+        ]
+      );
+    }
+    catch (ClientException $e) {
+      return [];
+    }
 
     $result = $this
       ->getResponseDecoderFactory()
