@@ -31,8 +31,6 @@ class UnlDirectory extends Rest {
    * {@inheritdoc}
    */
   public function load($id) {
-    $id = str_replace('_', '-', $id);
-
     try {
       $response = $this->httpClient->get(
         $this->configuration['endpoint'],
@@ -50,8 +48,6 @@ class UnlDirectory extends Rest {
       ->getResponseDecoderFactory()
       ->getDecoder($this->configuration['response_format'])
       ->decode($response->getBody());
-
-    $result['uid'] = str_replace('-', '_', $result['uid']);
 
     return $result;
   }
@@ -74,10 +70,6 @@ class UnlDirectory extends Rest {
     elseif (isset($parameters[0]) && $parameters[0]['field'] == 'id') {
       // Existing populated field.
       $uid = $parameters[0]['value'][0];
-      if (strpos($uid, '-') !== false) {
-        $uid = explode('-', $parameters[0]['value'][0])[1];
-        $uid = str_replace('_', '-', $uid);
-      }
       $parameters = ['uid' => $uid, 'format' => 'json'];
     }
     else {
@@ -109,11 +101,7 @@ class UnlDirectory extends Rest {
         // Cleanup the result so that 'uid' is available at $result['uid'].
         foreach (explode(',', $result['dn']) as $piece) {
           $pieces = explode('=', $piece);
-          // Need to substitute hyphen in old student IDs like s-jdoe2.
-          if ($pieces[0] == 'uid' || $pieces[0] == 'CN') {
-            $pieces[0] = 'uid';
-            $pieces[1] = str_replace('-', '_', $pieces[1]);
-          }
+          $pieces[0] = ($pieces[0] == 'CN') ? $pieces[0] = 'uid' : $pieces[0];
           $result[$pieces[1]] = [$pieces[0] => $pieces[1]];
         }
       }
