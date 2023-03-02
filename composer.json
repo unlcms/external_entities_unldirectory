@@ -4,7 +4,7 @@
   "type": "drupal-module",
   "require": {
     "drupal/core": "^8 || ^9 || ^10",
-    "drupal/external_entities": "2.0.*"
+    "drupal/external_entities": "^2"
   },
   "authors": [
     {
