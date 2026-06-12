@@ -9,6 +9,15 @@
 use Drupal\Core\Form\FormStateInterface;
 
 /**
+ * Implements hook_entity_type_alter().
+ */
+function external_entities_unldirectory_entity_type_alter(array &$entity_types) {
+  if (isset($entity_types['unl_directory_entry'])) {
+    $entity_types['unl_directory_entry']->setStorageClass('Drupal\external_entities_unldirectory\Entity\UnlDirectoryExternalEntityStorage');
+  }
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for external_entity_type_form().
  */
 function external_entities_unldirectory_form_external_entity_type_form_alter(array &$form, FormStateInterface $form_state) {

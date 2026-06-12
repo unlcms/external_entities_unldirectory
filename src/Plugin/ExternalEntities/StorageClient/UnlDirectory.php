@@ -8,7 +8,8 @@
 namespace Drupal\external_entities_unldirectory\Plugin\ExternalEntities\StorageClient;
 
 use Drupal\external_entities\Plugin\ExternalEntities\StorageClient\Rest;
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * UNL Directory implementation of an external entity storage client.
@@ -20,6 +21,31 @@ use GuzzleHttp\Exception\ClientException;
  * )
  */
 class UnlDirectory extends Rest {
+
+  protected $blank_result = [
+    'dn' => '',
+    'cn' => [],
+    'eduPersonAffiliation' => [],
+    'eduPersonNickname' => NULL,
+    'eduPersonPrimaryAffiliation' => [],
+    'eduPersonPrincipalName' => [],
+    'givenName' => [],
+    'displayName' => [],
+    'sn' => [],
+    'uid' => '',
+    'unlSISClassLevel' => NULL,
+    'unlSISCollege' => NULL,
+    'unlSISMajor' => NULL,
+    'unlSISMinor' => NULL,
+    'imageURL' => '',
+    'mail' => [],
+    'telephoneNumber' => [],
+    'postalAddress' => [],
+    'unlDirectoryAddress' => [],
+    'title' => [],
+    'unlHROrgUnitNumber' => [],
+    'unlHRPrimaryDepartment' => [],
+  ];
 
   /**
    * {@inheritdoc}
@@ -36,20 +62,45 @@ class UnlDirectory extends Rest {
         $this->configuration['endpoint'],
         [
           'query' => ['uid' => $id, 'format' => 'json'],
-          'headers' => $this->getHttpHeaders()
+          'headers' => $this->getHttpHeaders(),
+          'timeout' => 10,
+          'connect_timeout' => 5,
         ]
       );
-    }
-    catch (ClientException $e) {
-      return [];
-    }
 
-    $result = $this
-      ->getResponseDecoderFactory()
-      ->getDecoder($this->configuration['response_format'])
-      ->decode($response->getBody());
+      $result = $this
+        ->getResponseDecoderFactory()
+        ->getDecoder($this->configuration['response_format'])
+        ->decode($response->getBody());
 
-    return $result;
+      return $result;
+    }
+    catch (ConnectException $e) {
+      // Network-level failure (offline, DNS, firewall, etc.)
+      \Drupal::logger('external_entities_unldirectory')
+        ->warning('External endpoint offline: @url - @message', [
+          '@url' => $this->configuration['endpoint'],
+          '@message' => $e->getMessage(),
+        ]);
+      return $this->blank_result;
+    }
+    catch (RequestException $e) {
+      // Other HTTP-related errors (5xx, redirects, etc.)
+      \Drupal::logger('external_entities_unldirectory')
+        ->warning('Request failed for endpoint: @url - @message', [
+          '@url' => $this->configuration['endpoint'],
+          '@message' => $e->getMessage(),
+        ]);
+      return $this->blank_result;
+    }
+    catch (\Exception $e) {
+      // Catch-all for anything unexpected.
+      \Drupal::logger('external_entities_unldirectory')
+        ->error('Unexpected error in load(): @message', [
+          '@message' => $e->getMessage(),
+        ]);
+      return $this->blank_result;
+    }
   }
 
   /**
@@ -58,7 +109,7 @@ class UnlDirectory extends Rest {
   public function save(\Drupal\external_entities\ExternalEntityInterface $entity) {
   }
 
-  /**
+/**
    * {@inheritdoc}
    */
   public function query(array $parameters = [], array $sorts = [], $start = NULL, $length = NULL) {
