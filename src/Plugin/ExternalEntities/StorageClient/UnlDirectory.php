@@ -7,20 +7,20 @@
 
 namespace Drupal\external_entities_unldirectory\Plugin\ExternalEntities\StorageClient;
 
-use Drupal\external_entities\Plugin\ExternalEntities\StorageClient\Rest;
+use Drupal\external_entities\Plugin\ExternalEntities\StorageClient\RestClient;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 
 /**
  * UNL Directory implementation of an external entity storage client.
  *
- * @ExternalEntityStorageClient(
+ * @StorageClient(
  *   id = "unldirectory",
  *   label = @Translation("UNL Directory"),
  *   description = @Translation("Retrieves external entities from directory.unl.edu.")
  * )
  */
-class UnlDirectory extends Rest {
+class UnlDirectory extends RestClient {
 
   protected $blank_result = [
     'dn' => '',
@@ -50,13 +50,28 @@ class UnlDirectory extends Rest {
   /**
    * {@inheritdoc}
    */
-  public function delete(\Drupal\external_entities\ExternalEntityInterface $entity) {
+  public function delete(\Drupal\external_entities\Entity\ExternalEntityInterface $entity) {
   }
 
   /**
    * {@inheritdoc}
    */
-  public function load($id) {
+  public function loadMultiple(array $ids = NULL): array {
+    $data = [];
+
+    if (!empty($ids) && is_array($ids)) {
+      foreach ($ids as $id) {
+        $data[$id] = $this->load($id);
+      }
+    }
+
+    return $data;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function load($id): ?array {
     try {
       $response = $this->httpClient->get(
         $this->configuration['endpoint'],
@@ -106,13 +121,14 @@ class UnlDirectory extends Rest {
   /**
    * {@inheritdoc}
    */
-  public function save(\Drupal\external_entities\ExternalEntityInterface $entity) {
+  public function save(\Drupal\external_entities\Entity\ExternalEntityInterface $entity): int {
   }
 
-/**
+  /**
    * {@inheritdoc}
    */
-  public function query(array $parameters = [], array $sorts = [], $start = NULL, $length = NULL) {
+  public function query(array $parameters = [], array $sorts = [], $start = NULL, $length = NULL, array &$unhandled_filters = []): array {
+
     if (isset($parameters[0]) && $parameters[0]['field'] == 'title') {
       // New search.
       $q = $parameters[0]['value'];
